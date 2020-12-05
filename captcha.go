@@ -35,10 +35,10 @@ func Client(secure bool, provider string, apikey string) *CaptchaServiceClient{
 func (c *CaptchaServiceClient) CheckResult(captchaId string) (string, bool, error){
 	// Preparation form data
 	data := url.Values{
-		"key": {c.ApiKey},
-		"action": {"get"},
-		"id": {captchaId},
-		"json": {"1"},
+		"key":		{c.ApiKey},
+		"action":	{"get"},
+		"id":		{captchaId},
+		"json":		{"1"},
 	}
 
 	// Formalize the POST request
@@ -69,11 +69,11 @@ func (c *CaptchaServiceClient) CheckResult(captchaId string) (string, bool, erro
 func (c *CaptchaServiceClient) ReCaptchaV2(siteURL string, siteKey string) (string, error){
 	// Preparation form data
 	data := url.Values{
-		"key":			{c.ApiKey},
-		"method":		{"userrecaptcha"},
+		"key":		{c.ApiKey},
+		"method":	{"userrecaptcha"},
 		"googlekey":	{siteKey},
-		"pageurl":		{siteURL},
-		"json":			{"1"},
+		"pageurl":	{siteURL},
+		"json":		{"1"},
 	}
 
 	// Formalize the POST request
