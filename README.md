@@ -23,7 +23,7 @@ func main() {
 }
 ```
 
-Also usege with image captcha example:
+Also usage with image captcha example:
 ```
 client := captcha.Client(true, "cptch.net", "api-key")
 resolve, err := client.RegularCaptcha("base64-string")
