@@ -10,8 +10,13 @@ import (
 )
 
 type CaptchaServiceClient struct {
-	ApiKey 		string
-	Client 		*http.Client
+	ApiKey	string
+	Client	*http.Client
+}
+
+type Response struct{
+	Request	string
+	Status	float64
 }
 
 var baseURL *url.URL
@@ -29,6 +34,26 @@ func Client(secure bool, provider string, apikey string) *CaptchaServiceClient{
 		ApiKey: apikey,
 		Client: http.DefaultClient,
 	}
+}
+
+// A method create job and return the ID
+func (c *CaptchaServiceClient) CreatTask(dataForm url.Values) (string, error){
+	// Formalize the POST request
+	resp, err := http.Post(baseURL.ResolveReference(&url.URL{Path: "/in.php"}).String(), "application/x-www-form-urlencoded", strings.NewReader(dataForm.Encode()))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	// Decode the response
+	var responseBody Response
+	json.NewDecoder(resp.Body).Decode(&responseBody)
+
+	if responseBody.Status != 1{
+			return "", errors.New(responseBody.Request)
+	}
+
+	return responseBody.Request, nil
 }
 
 // A method to check answer for job
@@ -49,20 +74,20 @@ func (c *CaptchaServiceClient) CheckResult(captchaId string) (string, bool, erro
 	defer resp.Body.Close()
 
 	// Decode the response
-	responseBody := make(map[string]interface{})
+	var responseBody Response
 	json.NewDecoder(resp.Body).Decode(&responseBody)
 
 	// Interpret the answer
-	switch responseBody["request"].(string){
+	switch responseBody.Request{
 		case "CAPCHA_NOT_READY":
 			return "", false, nil
 		default:
-			if responseBody["status"].(float64) != 1{
-				return "", true, errors.New(responseBody["request"].(string))
+			if responseBody.Status != 1{
+				return "", true, errors.New(responseBody.Request)
 			}
 	}
 
-	return responseBody["request"].(string), true, nil
+	return responseBody.Request, true, nil
 }
 
 // A method that creates job with Google reCaptcha and gives you the answer
@@ -76,29 +101,15 @@ func (c *CaptchaServiceClient) ReCaptchaV2(siteURL string, siteKey string) (stri
 		"json":		{"1"},
 	}
 
-	// Formalize the POST request
-	resp, err := http.Post(baseURL.ResolveReference(&url.URL{Path: "/in.php"}).String(), "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
-	if err != nil {
+	// Create task to resolve
+	jobID, err := c.CreatTask(data)
+	if err != nil{
 		return "", err
-	}
-	defer resp.Body.Close()
-
-	// Decode the response
-	responseBody := make(map[string]interface{})
-	json.NewDecoder(resp.Body).Decode(&responseBody)
-
-	// Interpret the answer
-	if _, ok := responseBody["status"]; !ok {
-		return "", errors.New("Wrong resopnse struct")
-	}
-
-	if responseBody["status"].(float64) != 1{
-			return "", errors.New(responseBody["request"].(string))
-	}
+	} 
 	
 	// Check the status of job every 5 seconds
 	for t := 0; t <= 20; t++{
-		answer, ready, err := c.CheckResult(responseBody["request"].(string))
+		answer, ready, err := c.CheckResult(jobID)
 		if err != nil{
 			return "", err
 		}
@@ -124,28 +135,15 @@ func (c *CaptchaServiceClient) RegularCaptcha(base64Image string) (string, error
 		"json":		{"1"},
 	}
 
-	// Formalize the POST request
-	resp, err := http.Post(baseURL.ResolveReference(&url.URL{Path: "/in.php"}).String(), "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
-	if err != nil {
+	// Create task to solve
+	jobID, err := c.CreatTask(data)
+	if err != nil{
 		return "", err
-	}
-	defer resp.Body.Close()
-
-	// Decode the response
-	responseBody := make(map[string]interface{})
-	json.NewDecoder(resp.Body).Decode(&responseBody)
-
-	// Interpret the answer
-	if _, ok := responseBody["status"]; !ok {
-		return "", errors.New("Wrong resopnse struct")
-	}
-	if responseBody["status"].(float64) != 1{
-		return "", errors.New(responseBody["request"].(string))
-	}
+	} 
 
 	// Check the status of job every 5 seconds
 	for t := 0; t <= 20; t++{
-		answer, ready, err := c.CheckResult(responseBody["request"].(string))
+		answer, ready, err := c.CheckResult(jobID)
 		if err != nil{
 			return "", err
 		}
