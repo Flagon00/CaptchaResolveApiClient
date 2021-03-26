@@ -91,42 +91,48 @@ func (c *CaptchaServiceClient) CheckResult(captchaId string) (string, bool, erro
 }
 
 // A method that creates job with Google reCaptcha and gives you the answer
-func (c *CaptchaServiceClient) ReCaptchaV2(siteURL string, siteKey string) (string, error){
+func (c *CaptchaServiceClient) ReCaptchaV2(siteURL string, siteKey string, timeout time.Duration) (string, error){
 	// Preparation form data
 	data := url.Values{
-		"key":		{c.ApiKey},
-		"method":	{"userrecaptcha"},
-		"googlekey":	{siteKey},
-		"pageurl":	{siteURL},
-		"json":		{"1"},
+		"key":			{c.ApiKey},
+		"method":		{"userrecaptcha"},
+		"googlekey":		{siteKey},
+		"pageurl":		{siteURL},
+		"json":			{"1"},
 	}
 
 	// Create task to resolve
 	jobID, err := c.CreatTask(data)
 	if err != nil{
 		return "", err
-	} 
-	
+	}
+
 	// Check the status of job every 5 seconds
-	for t := 0; t <= 20; t++{
-		answer, ready, err := c.CheckResult(jobID)
-		if err != nil{
-			return "", err
-		}
+	ping := time.NewTicker(5 * time.Second)
+	timeoutBreak := time.NewTimer(timeout * time.Second)
 
-		if ready{
-			return answer, nil
-		}
+	for {
+		select {
+		case <-ping.C:
+			answer, ready, err := c.CheckResult(jobID)
+			if err != nil{
+				return "", err
+			}
 
-		time.Sleep(time.Second * 5)
+			if ready{
+				return answer, nil
+			}
+		case <-timeoutBreak.C:
+			return "", errors.New("Waiting for captcha result timeout")
+		}
 	}
 
 	// If the job takes too long
-	return "", errors.New("Too many tries")
+	return "", errors.New("Waiting for captcha result timeout")
 }
 
 // A method that creates job with regular image captcha in base64 and gives you the answer
-func (c *CaptchaServiceClient) RegularCaptcha(base64Image string) (string, error){
+func (c *CaptchaServiceClient) RegularCaptcha(base64Image string, timeout time.Duration) (string, error){
 	// Preparation form data
 	data := url.Values{
 		"key":		{c.ApiKey},
@@ -142,19 +148,25 @@ func (c *CaptchaServiceClient) RegularCaptcha(base64Image string) (string, error
 	} 
 
 	// Check the status of job every 5 seconds
-	for t := 0; t <= 20; t++{
-		answer, ready, err := c.CheckResult(jobID)
-		if err != nil{
-			return "", err
-		}
+	ping := time.NewTicker(5 * time.Second)
+	timeoutBreak := time.NewTimer(timeout * time.Second)
 
-		if ready{
-			return answer, nil
-		}
+	for {
+		select {
+		case <-ping.C:
+			answer, ready, err := c.CheckResult(jobID)
+			if err != nil{
+				return "", err
+			}
 
-		time.Sleep(time.Second * 5)
+			if ready{
+				return answer, nil
+			}
+		case <-timeoutBreak.C:
+			return "", errors.New("Waiting for captcha result timeout")
+		}
 	}
 
 	// If the job takes too long
-	return "", errors.New("Too many tries")
+	return "", errors.New("Waiting for captcha result timeout")
 }

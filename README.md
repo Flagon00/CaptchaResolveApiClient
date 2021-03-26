@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/xta/okrun?status.svg)](https://pkg.go.dev/github.com/Flagon00/CaptchaResolveApiClient)
 
-One package for all services that support /in.php and /resp.php api. Tested on cptch.net, 2captcha.com, XEvil and capmonster.cloud
+One package for all services that support /in.php and /resp.php api. Tested on cptch.net, 2captcha.com and XEvil
 
 Setup:
 ```go get -u github.com/Flagon00/CaptchaResolveApiClient```
@@ -19,7 +19,7 @@ import (
 
 func main() {
     client := captcha.Client(true, "cptch.net", "api-key")
-    resolve, err := client.ReCaptchaV2("https://www.google.com/recaptcha/api2/demo",  "6Le-wvkSAAAAAPBMRTvw0Q4Muexq9bi0DJwx_mJ-")
+    resolve, err := client.ReCaptchaV2("https://www.google.com/recaptcha/api2/demo",  "6Le-wvkSAAAAAPBMRTvw0Q4Muexq9bi0DJwx_mJ-", 60)
     if err != nil{
         log.Fatal(err)
     }
@@ -30,7 +30,7 @@ func main() {
 Also usage with image captcha example:
 ```go
 client := captcha.Client(true, "cptch.net", "api-key")
-resolve, err := client.RegularCaptcha("base64-string")
+resolve, err := client.RegularCaptcha("base64-string", 60)
 if err != nil{
     log.Fatal(err)
 }
